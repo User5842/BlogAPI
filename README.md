@@ -12,6 +12,7 @@
 
 ### Post
 
+```
 Author: string
 Content: string
 Description: string
@@ -21,25 +22,31 @@ Summary: string
 Slug: string
 Tags: IList<string>
 Title: string
+```
 
 ### Tag
 
+```
 Id: int
 Name: string
+```
 
 ## Data Transfer Objects
 
 ### CreatePostRequest
 
+```
 Author: string
 Content: string
 Description: string
 Summary: string
 Tags: IList<string>
 Title: string
+```
 
 ### CreatedPostResponse
 
+```
 Author: string
 Content: string
 Description: string
@@ -49,11 +56,13 @@ Summary: string
 Slug: string
 Tags: IList<string>
 Title: string
+```
 
 ## API Endpoints
 
 ### Create a post
 
+json```
 POST /posts HTTP/1.1
 Accept: application/json
 Host: localhost
@@ -66,7 +75,9 @@ Host: localhost
     "Tags": ["general"],
     "Title": "Sample title"
 }
+```
 
+json```
 HTTP/1.1 201 Created
 Content-Type: application/json
 Location: /posts/1
@@ -82,9 +93,11 @@ Location: /posts/1
     "Tags": ["general"],
     "Title": "Sample title"
 }
+```
 
 ### Retrieve a single post
 
+json```
 GET /posts/1 HTTP/1.1
 Accept: posts/1
 Host: localhost
@@ -103,7 +116,9 @@ Content-Type: application/json
     "Tags": ["general"],
     "Title": "Sample title"
 }
+```
 
+json```
 404 Not Found HTTP/1.1
 Content-Type: application/problem+json
 
@@ -114,9 +129,11 @@ Content-Type: application/problem+json
   "detail": "The post with the specified identifier was not found",
   "instance": "GET /posts/1"
 }
+```
 
 ### Retrieve all posts
 
+json```
 GET /posts HTTP/1.1
 Accept: application/json
 Host: localhost
@@ -137,9 +154,11 @@ Content-Type: application/json
         "Title": "Sample title"
     }
 ]
+```
 
 ### Update a single post
 
+json```
 PUT /posts/1 HTTP/1.1
 Accept: application/json
 Host: localhost
@@ -152,7 +171,9 @@ Host: localhost
     "Tags": ["general", "code", "finance"],
     "Title": "Updated title"
 }
+```
 
+json```
 200 OK HTTP/1.1
 Content-Type: application/json
 
@@ -167,9 +188,11 @@ Content-Type: application/json
     "Tags": ["general"],
     "Title": "Updated title"
 }
+```
 
 ### Delete a single post
 
+json```
 DELETE /posts/1 HTTP/1.1
 Accept: application/json
 Host: localhost
@@ -177,3 +200,4 @@ Host: localhost
 HTTP/1.1 204 No Content
 
 HTTP/1.1 404 Not Found
+```
