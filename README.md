@@ -5,8 +5,8 @@
 - [x] Create a new post
 - [x] Retrieve a single post
 - [x] Retrieve all posts
-- [] Update a single post
-- [] Delete a single post
+- [x] Update a single post
+- [x] Delete a single post
 
 ## Entities
 
@@ -149,7 +149,7 @@ Host: localhost
     "Content": "Updated content",
     "Description": "Updated description",
     "Summary": "Updated summary",
-    "Tags": ["general"],
+    "Tags": ["general", "code", "finance"],
     "Title": "Updated title"
 }
 
@@ -167,3 +167,13 @@ Content-Type: application/json
     "Tags": ["general"],
     "Title": "Updated title"
 }
+
+### Delete a single post
+
+DELETE /posts/1 HTTP/1.1
+Accept: application/json
+Host: localhost
+
+HTTP/1.1 204 No Content
+
+HTTP/1.1 404 Not Found
