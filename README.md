@@ -62,7 +62,7 @@ Title: string
 
 ### Create a post
 
-json```
+```json
 POST /posts HTTP/1.1
 Accept: application/json
 Host: localhost
@@ -77,7 +77,7 @@ Host: localhost
 }
 ```
 
-json```
+```json
 HTTP/1.1 201 Created
 Content-Type: application/json
 Location: /posts/1
@@ -97,7 +97,7 @@ Location: /posts/1
 
 ### Retrieve a single post
 
-json```
+```json
 GET /posts/1 HTTP/1.1
 Accept: posts/1
 Host: localhost
@@ -118,7 +118,7 @@ Content-Type: application/json
 }
 ```
 
-json```
+```json
 404 Not Found HTTP/1.1
 Content-Type: application/problem+json
 
@@ -133,7 +133,7 @@ Content-Type: application/problem+json
 
 ### Retrieve all posts
 
-json```
+```json
 GET /posts HTTP/1.1
 Accept: application/json
 Host: localhost
@@ -158,7 +158,7 @@ Content-Type: application/json
 
 ### Update a single post
 
-json```
+```json
 PUT /posts/1 HTTP/1.1
 Accept: application/json
 Host: localhost
@@ -173,7 +173,7 @@ Host: localhost
 }
 ```
 
-json```
+```json
 200 OK HTTP/1.1
 Content-Type: application/json
 
@@ -192,7 +192,7 @@ Content-Type: application/json
 
 ### Delete a single post
 
-json```
+```json
 DELETE /posts/1 HTTP/1.1
 Accept: application/json
 Host: localhost
