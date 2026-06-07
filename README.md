@@ -3,10 +3,10 @@
 ## Functional requirements
 
 - [x] Create a new post
-- [x] Retrieve a single post
-- [x] Retrieve all posts
-- [x] Update a single post
-- [x] Delete a single post
+- [] Retrieve a single post
+- [] Retrieve all posts
+- [] Update a single post
+- [] Delete a single post
 
 ## Entities
 
