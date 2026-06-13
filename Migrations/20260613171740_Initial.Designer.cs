@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlogAPI.Migrations
 {
     [DbContext(typeof(BlogContext))]
-    [Migration("20260607153222_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260613171740_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -47,10 +47,6 @@ namespace BlogAPI.Migrations
                     b.Property<string>("Summary")
                         .HasColumnType("TEXT");
 
-                    b.PrimitiveCollection<string>("Tags")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -58,6 +54,54 @@ namespace BlogAPI.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Posts");
+                });
+
+            modelBuilder.Entity("BlogAPI.Entities.Tag", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Tags");
+                });
+
+            modelBuilder.Entity("PostTag", b =>
+                {
+                    b.Property<int>("PostsId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TagsId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("PostsId", "TagsId");
+
+                    b.HasIndex("TagsId");
+
+                    b.ToTable("PostTag");
+                });
+
+            modelBuilder.Entity("PostTag", b =>
+                {
+                    b.HasOne("BlogAPI.Entities.Post", null)
+                        .WithMany()
+                        .HasForeignKey("PostsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BlogAPI.Entities.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

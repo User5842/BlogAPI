@@ -1,6 +1,9 @@
-namespace BlogAPI.Entities;
+using System.Diagnostics.CodeAnalysis;
+using BlogAPI.Entities;
 
-public sealed class Post
+namespace BlogAPI.DataTransfer;
+
+public sealed partial class PostResponse
 {
     public required string Author { get; set; }
     public required string Content { get; set; }
@@ -9,6 +12,6 @@ public sealed class Post
     public required DateTimeOffset Published { get; set; }
     public required string Slug { get; set; }
     public string? Summary { get; set; }
-    public ICollection<Tag> Tags { get; set; } = [];
+    public ICollection<string> Tags { get; set; } = [];
     public required string Title { get; set; }
 }
