@@ -10,6 +10,10 @@ public sealed class BlogContext(DbContextOptions<BlogContext> options) : DbConte
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Post>()
+            .HasIndex(p => p.Slug)
+            .IsUnique();
+
         modelBuilder.Entity<Tag>()
             .HasIndex(t => t.Name)
             .IsUnique();

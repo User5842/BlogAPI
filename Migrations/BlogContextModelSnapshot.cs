@@ -50,6 +50,9 @@ namespace BlogAPI.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
                     b.ToTable("Posts");
                 });
 

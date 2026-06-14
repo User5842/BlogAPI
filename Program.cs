@@ -19,28 +19,14 @@ app.UseStatusCodePages();
 
 app.MapPost("/posts", async (PostRequest post, BlogContext db) =>
 {
-    var normalizedTags = post.Tags
-        .Where(t => !string.IsNullOrWhiteSpace(t))
-        .Select(t => t.Trim().ToLowerInvariant())
-        .Distinct()
-        .ToList();
-
-    var existingTags = await db.Tags
-        .Where(t => normalizedTags.Contains(t.Name))
-        .ToDictionaryAsync(t => t.Name);
-
-    var combinedTags = normalizedTags
-        .Select(t => existingTags.GetValueOrDefault(t) ?? new Tag { Name = t })
-        .ToList();
-
     var newPost = new Post
     {
         Author = post.Author,
         Content = post.Content,
         Description = post.Description,
         Published = DateTimeOffset.UtcNow,
-        Slug = string.Join("-", post.Title.ToLowerInvariant().Split(" ")),
-        Tags = combinedTags,
+        Slug = await GenerateSlugAsync(post.Title, db),
+        Tags = await GetCombinedTagsAsync(post.Tags, db),
         Title = post.Title
     };
 
@@ -83,26 +69,12 @@ app.MapPut("/posts/{id}", async Task<Results<Ok<PostResponse>, NotFound>> (int i
         return TypedResults.NotFound();
     }
 
-    var normalizedTags = newPost.Tags
-        .Where(t => !string.IsNullOrWhiteSpace(t))
-        .Select(t => t.Trim().ToLowerInvariant())
-        .Distinct()
-        .ToList();
-
-    var existingTags = await db.Tags
-        .Where(t => normalizedTags.Contains(t.Name))
-        .ToDictionaryAsync(t => t.Name);
-
-    var combinedTags = normalizedTags
-        .Select(t => existingTags.GetValueOrDefault(t) ?? new Tag { Name = t })
-        .ToList();
-
     post.Tags.Clear();
 
     post.Author = newPost.Author;
     post.Content = newPost.Content;
     post.Description = newPost.Description;
-    post.Tags = combinedTags;
+    post.Tags = await GetCombinedTagsAsync(newPost.Tags, db);
     post.Title = newPost.Title;
 
     await db.SaveChangesAsync();
@@ -124,5 +96,35 @@ app.MapDelete("/posts/{id}", async Task<Results<NoContent, NotFound>> (int id, B
 
     return TypedResults.NoContent();
 });
+
+static async Task<List<Tag>> GetCombinedTagsAsync(ICollection<string> tags, BlogContext db)
+{
+    var normalizedTags = tags
+        .Where(t => !string.IsNullOrWhiteSpace(t))
+        .Select(t => t.Trim().ToLowerInvariant())
+        .Distinct()
+        .ToList();
+
+    var existingTags = await db.Tags
+        .Where(t => normalizedTags.Contains(t.Name))
+        .ToDictionaryAsync(t => t.Name);
+
+    return [.. normalizedTags.Select(t => existingTags.GetValueOrDefault(t) ?? new Tag { Name = t })];
+}
+
+static async Task<string> GenerateSlugAsync(string title, BlogContext db)
+{
+    var baseSlug = string.Join("-", title.ToLowerInvariant().Split(" "));
+    var slug = baseSlug;
+    var suffix = 2;
+
+    while (await db.Posts.AnyAsync(p => p.Slug == slug))
+    {
+        slug = $"{baseSlug}-{suffix}";
+        suffix++;
+    }
+
+    return slug;
+}
 
 app.Run();
