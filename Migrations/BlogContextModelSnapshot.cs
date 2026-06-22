@@ -34,7 +34,7 @@ namespace BlogAPI.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTimeOffset>("Published")
+                    b.Property<DateTime>("Published")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Slug")

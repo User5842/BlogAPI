@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BlogAPI.Migrations
 {
     /// <inheritdoc />
-    public partial class UniqueSlugs : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,7 +20,7 @@ namespace BlogAPI.Migrations
                     Author = table.Column<string>(type: "TEXT", nullable: false),
                     Content = table.Column<string>(type: "TEXT", nullable: false),
                     Description = table.Column<string>(type: "TEXT", nullable: true),
-                    Published = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    Published = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Slug = table.Column<string>(type: "TEXT", nullable: false),
                     Summary = table.Column<string>(type: "TEXT", nullable: true),
                     Title = table.Column<string>(type: "TEXT", nullable: false)

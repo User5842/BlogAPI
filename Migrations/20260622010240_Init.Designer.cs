@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlogAPI.Migrations
 {
     [DbContext(typeof(BlogContext))]
-    [Migration("20260614155049_UniqueSlugs")]
-    partial class UniqueSlugs
+    [Migration("20260622010240_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -37,7 +37,7 @@ namespace BlogAPI.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTimeOffset>("Published")
+                    b.Property<DateTime>("Published")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Slug")

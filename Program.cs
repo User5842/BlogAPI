@@ -1,3 +1,4 @@
+using System.Globalization;
 using BlogAPI.DatabaseContext;
 using BlogAPI.DataTransfer;
 using BlogAPI.Entities;
@@ -24,7 +25,7 @@ app.MapPost("/posts", async (PostRequest post, BlogContext db) =>
         Author = post.Author,
         Content = post.Content,
         Description = post.Description,
-        Published = DateTimeOffset.UtcNow,
+        Published = post.Published,
         Slug = await GenerateSlugAsync(post.Title, db),
         Tags = await GetCombinedTagsAsync(post.Tags, db),
         Title = post.Title
@@ -39,8 +40,57 @@ app.MapPost("/posts", async (PostRequest post, BlogContext db) =>
     );
 });
 
-app.MapGet("/posts", async (BlogContext db) =>
-    await db.Posts.Select(PostResponse.Projection).ToListAsync());
+app.MapGet("/posts", async Task<Results<Ok<List<PostResponse>>, BadRequest<string>>> (
+    string? fromDate,
+    string? tags,
+    BlogContext db
+) =>
+{
+    var query = db.Posts
+        .AsNoTracking()
+        .AsQueryable();
+
+    if (!string.IsNullOrWhiteSpace(fromDate))
+    {
+        var parsedFromDateResult = DateTime.TryParseExact(
+            fromDate,
+            "yyyy-MM-dd",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None,
+            out var parsedFromDate
+        );
+
+        if (!parsedFromDateResult)
+        {
+            return TypedResults.BadRequest("The format of `fromDate` is invalid. The correct format is 'yyyy-MM-dd'.");
+        }
+
+        query = query.Where(p => p.Published >= parsedFromDate);
+    }
+
+    if (tags is not null)
+    {
+        var normalizedTags = tags
+            .Split(",")
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .Select(t => t.Trim().ToLowerInvariant())
+            .Distinct()
+            .ToList();
+
+        if (normalizedTags.Count > 0)
+        {
+            query = query.Where(p => p.Tags.Any(t => normalizedTags.Contains(t.Name)));
+        }
+    }
+
+    var posts = await query
+        .OrderByDescending(p => p.Published)
+        .ThenByDescending(p => p.Id)
+        .Select(PostResponse.Projection)
+        .ToListAsync();
+
+    return TypedResults.Ok(posts);
+});
 
 app.MapGet("/posts/{id}", async Task<Results<Ok<PostResponse>, NotFound>> (int id, BlogContext db) =>
 {

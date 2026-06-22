@@ -17,7 +17,7 @@ Author: string
 Content: string
 Description: string
 Id: int
-Published: DateTimeOffset
+Published: DateTime
 Summary: string
 Slug: string
 Tags: IList<string>
@@ -51,7 +51,7 @@ Author: string
 Content: string
 Description: string
 Id: int
-Published: DateTimeOffset
+Published: DateTime
 Summary: string
 Slug: string
 Tags: IList<string>
