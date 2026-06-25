@@ -1,6 +1,7 @@
 using System.Globalization;
 using BlogAPI.DatabaseContext;
 using BlogAPI.DataTransfer;
+using BlogAPI.DataTransfer.QueryParameters;
 using BlogAPI.Entities;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -40,9 +41,8 @@ app.MapPost("/posts", async (PostRequest post, BlogContext db) =>
     );
 });
 
-app.MapGet("/posts", async Task<Results<Ok<List<PostResponse>>, BadRequest<string>>> (
-    string? fromDate,
-    string? tags,
+app.MapGet("/posts", async Task<Results<Ok<PagedPostResponse>, BadRequest<string>, ValidationProblem>> (
+    [AsParameters] GetAllPostsQueryParameters queryParams,
     BlogContext db
 ) =>
 {
@@ -50,10 +50,10 @@ app.MapGet("/posts", async Task<Results<Ok<List<PostResponse>>, BadRequest<strin
         .AsNoTracking()
         .AsQueryable();
 
-    if (!string.IsNullOrWhiteSpace(fromDate))
+    if (!string.IsNullOrWhiteSpace(queryParams.FromDate))
     {
         var parsedFromDateResult = DateTime.TryParseExact(
-            fromDate,
+            queryParams.FromDate,
             "yyyy-MM-dd",
             CultureInfo.InvariantCulture,
             DateTimeStyles.None,
@@ -68,9 +68,9 @@ app.MapGet("/posts", async Task<Results<Ok<List<PostResponse>>, BadRequest<strin
         query = query.Where(p => p.Published >= parsedFromDate);
     }
 
-    if (tags is not null)
+    if (queryParams.Tags is not null)
     {
-        var normalizedTags = tags
+        var normalizedTags = queryParams.Tags
             .Split(",")
             .Where(t => !string.IsNullOrWhiteSpace(t))
             .Select(t => t.Trim().ToLowerInvariant())
@@ -83,13 +83,46 @@ app.MapGet("/posts", async Task<Results<Ok<List<PostResponse>>, BadRequest<strin
         }
     }
 
+    var limit = queryParams.Limit ?? 30;
+    var offset = queryParams.Offset ?? 0;
+
+    if (limit < 1)
+    {
+        return TypedResults.ValidationProblem(
+            new Dictionary<string, string[]>
+            {
+                ["limit"] = ["The limit parameter must be greater than or equal to 1"]
+            }
+        );
+    }
+
+    if (offset < 0)
+    {
+        return TypedResults.ValidationProblem(
+            new Dictionary<string, string[]>
+            {
+                ["offset"] = ["The offset parameter must be greater than or equal to 0"]
+            }
+        );
+    }
+
+    var total = await query.CountAsync();
+
     var posts = await query
         .OrderByDescending(p => p.Published)
         .ThenByDescending(p => p.Id)
+        .Skip(offset)
+        .Take(limit)
         .Select(PostResponse.Projection)
         .ToListAsync();
 
-    return TypedResults.Ok(posts);
+    return TypedResults.Ok(new PagedPostResponse
+    {
+        Limit = limit,
+        Offset = offset,
+        Posts = posts,
+        Total = total
+    });
 });
 
 app.MapGet("/posts/{id}", async Task<Results<Ok<PostResponse>, NotFound>> (int id, BlogContext db) =>
