@@ -3,12 +3,98 @@
 set -u
 
 API_URL="${API_URL:-http://localhost:5011}"
-POST_COUNT="${POST_COUNT:-1000}"
+DEFAULT_POST_COUNT="${POST_COUNT:-1000}"
 
-if ! [[ "$POST_COUNT" =~ ^[0-9]+$ ]] || ((POST_COUNT < 1 || POST_COUNT > 1000)); then
-    echo "POST_COUNT must be an integer between 1 and 1000." >&2
+if (($# > 1)); then
+    echo "Usage: $0 [post_count]" >&2
+    echo "You can also set POST_COUNT and API_URL as environment variables." >&2
     exit 1
 fi
+
+POST_COUNT="${1:-$DEFAULT_POST_COUNT}"
+
+if ! [[ "$POST_COUNT" =~ ^[0-9]+$ ]] || ((POST_COUNT < 1)); then
+    echo "POST_COUNT must be a positive integer." >&2
+    exit 1
+fi
+
+START_YEAR=2000
+END_YEAR=2026
+MINUTES_PER_DAY=1440
+
+is_leap_year() {
+    local year=$1
+
+    if (((year % 400 == 0) || (year % 4 == 0 && year % 100 != 0))); then
+        return 0
+    fi
+
+    return 1
+}
+
+days_in_year() {
+    local year=$1
+
+    if is_leap_year "$year"; then
+        echo 366
+    else
+        echo 365
+    fi
+}
+
+TOTAL_DAYS=0
+for ((year = START_YEAR; year <= END_YEAR; year++)); do
+    TOTAL_DAYS=$((TOTAL_DAYS + $(days_in_year "$year")))
+done
+
+format_published_date() {
+    local index=$1
+    local post_count=$2
+    local year
+
+    if ((post_count == 1)); then
+        printf "%04d-01-01T08:00:00" "$START_YEAR"
+        return
+    fi
+
+    local total_minutes=$((TOTAL_DAYS * MINUTES_PER_DAY - 1))
+    local minute_offset=$((index * total_minutes / (post_count - 1)))
+    local day_offset=$((minute_offset / MINUTES_PER_DAY))
+    local minute_of_day=$((minute_offset % MINUTES_PER_DAY))
+    local hour=$((minute_of_day / 60))
+    local minute=$((minute_of_day % 60))
+
+    for ((year = START_YEAR; year <= END_YEAR; year++)); do
+        local year_days
+        year_days=$(days_in_year "$year")
+
+        if ((day_offset < year_days)); then
+            break
+        fi
+
+        day_offset=$((day_offset - year_days))
+    done
+
+    local month_lengths=(31 28 31 30 31 30 31 31 30 31 30 31)
+    if is_leap_year "$year"; then
+        month_lengths[1]=29
+    fi
+
+    local month=1
+    local month_index
+    for ((month_index = 0; month_index < 12; month_index++)); do
+        if ((day_offset < month_lengths[month_index])); then
+            month=$((month_index + 1))
+            break
+        fi
+
+        day_offset=$((day_offset - month_lengths[month_index]))
+    done
+
+    local day=$((day_offset + 1))
+
+    printf "%04d-%02d-%02dT%02d:%02d:00" "$year" "$month" "$day" "$hour" "$minute"
+}
 
 first_names=(
     "Maya" "Jonah" "Elena" "Theo" "Nadia" "Silas" "Iris" "Caleb"
@@ -96,20 +182,12 @@ for ((i = ${#author_indexes[@]} - 1; i > 0; i--)); do
     author_indexes[$j]=$temporary
 done
 
-echo "Seeding $POST_COUNT posts at $API_URL/posts"
+echo "Seeding $POST_COUNT posts at $API_URL/posts with dates from $START_YEAR through $END_YEAR"
 
 for ((i = 0; i < POST_COUNT; i++)); do
-    if ((POST_COUNT == 1)); then
-        year=2000
-    else
-        year=$((2000 + (i * 26 / (POST_COUNT - 1))))
-    fi
+    published=$(format_published_date "$i" "$POST_COUNT")
 
-    month=$((1 + RANDOM % 12))
-    day=$((1 + RANDOM % 28))
-    published=$(printf "%04d-%02d-%02dT%02d:%02d:00" "$year" "$month" "$day" "$((8 + RANDOM % 12))" "$((RANDOM % 60))")
-
-    author=${authors[${author_indexes[$i]}]}
+    author=${authors[${author_indexes[$((i % ${#author_indexes[@]}))]}]}
     title="${title_adjectives[$((RANDOM % ${#title_adjectives[@]}))]} ${title_nouns[$((RANDOM % ${#title_nouns[@]}))]} $((i + 1))"
     place=${places[$((RANDOM % ${#places[@]}))]}
     discovery=${discoveries[$((RANDOM % ${#discoveries[@]}))]}
@@ -156,4 +234,3 @@ for ((i = 0; i < POST_COUNT; i++)); do
 done
 
 echo "Seed complete."
-

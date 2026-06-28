@@ -1,9 +1,13 @@
 using System.Globalization;
+using System.Text;
+using System.Text.Json;
 using BlogAPI.DatabaseContext;
 using BlogAPI.DataTransfer;
 using BlogAPI.DataTransfer.QueryParameters;
 using BlogAPI.Entities;
+using BlogAPI.Helpers;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -84,7 +88,6 @@ app.MapGet("/posts", async Task<Results<Ok<PagedPostResponse>, BadRequest<string
     }
 
     var limit = queryParams.Limit ?? 30;
-    var offset = queryParams.Offset ?? 0;
 
     if (limit < 1)
     {
@@ -96,31 +99,36 @@ app.MapGet("/posts", async Task<Results<Ok<PagedPostResponse>, BadRequest<string
         );
     }
 
-    if (offset < 0)
+    if (!string.IsNullOrWhiteSpace(queryParams.Cursor))
     {
-        return TypedResults.ValidationProblem(
-            new Dictionary<string, string[]>
-            {
-                ["offset"] = ["The offset parameter must be greater than or equal to 0"]
-            }
-        );
+        if (!CursorHelper.TryParseCursor(queryParams.Cursor, out var cursor))
+        {
+            return TypedResults.ValidationProblem(
+                new Dictionary<string, string[]>
+                {
+                    ["cursor"] = ["The passed in cursor was invalid."]
+                }
+            );
+        }
+
+        query = query.Where(p => p.Id < cursor.Id);
     }
 
     var total = await query.CountAsync();
 
     var posts = await query
-        .OrderByDescending(p => p.Published)
-        .ThenByDescending(p => p.Id)
-        .Skip(offset)
-        .Take(limit)
+        .OrderByDescending(p => p.Id)
+        .Take(limit + 1)
         .Select(PostResponse.Projection)
         .ToListAsync();
 
+    string? nextCursor = CursorHelper.GenerateCursor(posts, limit);
+
     return TypedResults.Ok(new PagedPostResponse
     {
+        Cursor = nextCursor,
         Limit = limit,
-        Offset = offset,
-        Posts = posts,
+        Posts = [.. posts.Take(limit)],
         Total = total
     });
 });
