@@ -9,8 +9,12 @@ using BlogAPI.Helpers;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using OpenAI;
+using OpenAI.Chat;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddChatClient("Clients:ChatClient");
 
 builder.Services.AddDbContext<BlogContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("BlogContextDatabase")));
@@ -23,18 +27,33 @@ var app = builder.Build();
 
 app.UseStatusCodePages();
 
-app.MapPost("/posts", async (PostRequest post, BlogContext db) =>
+app.MapPost("/posts", async (
+    PostRequest post,
+    BlogContext db,
+    ChatClient chatClient,
+    IConfiguration configuration
+) =>
 {
     var newPost = new Post
     {
         Author = post.Author,
         Content = post.Content,
         Description = post.Description,
-        Published = post.Published,
+        Published = DateTime.UtcNow,
         Slug = await GenerateSlugAsync(post.Title, db),
         Tags = await GetCombinedTagsAsync(post.Tags, db),
         Title = post.Title
     };
+
+    ChatCompletion completion = await chatClient.CompleteChatAsync($"""
+        Summarize the following blog post in 5 sentences or fewer.
+        Focus on the main ideas, key takeaways, and overall purpose.
+        Keep the summary clear, concise, and easy to understand.
+
+        Blog post:
+        {post.Content}
+    """);
+    newPost.Summary = completion.Content[0].Text;
 
     db.Posts.Add(newPost);
     await db.SaveChangesAsync();
